@@ -28,43 +28,46 @@ def get_mouth_movement(landmarks):
 
 cap = cv2.VideoCapture(0)
 MOUTH_THRESHOLD = 20  # 입술 움직임에 대한 임의의 임계값
-warning_count = 0  # 경고 횟수 카운트 변수
-last_warning_time = 0  # 마지막 경고 시간
 
-# 경고 누적 제한 시간 (초)
-WARNING_COOLDOWN_TIME = 5
+warning_time = 0
+warning_count = 0
+DISPLAY_WARNING = False
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    current_time = time.time()
+    landmarks = get_face_landmarks(frame)
+    if landmarks:
+        nose_tip = landmarks.part(30)
+        mouth_left = landmarks.part(48)
+        mouth_right = landmarks.part(54)
 
-    # 경고 누적 제한 시간 내에는 경고를 누적하지 않음
-    if current_time - last_warning_time >= WARNING_COOLDOWN_TIME:
-        landmarks = get_face_landmarks(frame)
-        if landmarks:
-            nose_tip = landmarks.part(30)
-            mouth_left = landmarks.part(48)
-            mouth_right = landmarks.part(54)
+        cv2.line(frame, (nose_tip.x, nose_tip.y), (mouth_left.x, mouth_left.y), (255, 0, 0), 2)
+        cv2.line(frame, (nose_tip.x, nose_tip.y), (mouth_right.x, mouth_right.y), (255, 0, 0), 2)
 
-            cv2.line(frame, (nose_tip.x, nose_tip.y), (mouth_left.x, mouth_left.y), (255, 0, 0), 2)
-            cv2.line(frame, (nose_tip.x, nose_tip.y), (mouth_right.x, mouth_right.y), (255, 0, 0), 2)
+        ratio = get_distance(nose_tip, mouth_left) / get_distance(nose_tip, mouth_right)
 
-            ratio = get_distance(nose_tip, mouth_left) / get_distance(nose_tip, mouth_right)
+        mouth_movement = get_mouth_movement(landmarks)
 
-            mouth_movement = get_mouth_movement(landmarks)
-
-            # 미소를 지었는지 판별하고, 미소를 지지 않았을 경우에만 경고 메시지 출력
-            if mouth_movement < MOUTH_THRESHOLD:
-                if ratio > 1.2 or ratio < 0.8:  # 임의의 기준값
+        # 미소를 지었는지 판별하고, 미소를 지지 않았을 경우에만 경고 메시지 출력 및 카운트
+        if mouth_movement < MOUTH_THRESHOLD:
+            if ratio > 1.2 or ratio < 0.8:  # 임의의 기준값
+                if not DISPLAY_WARNING:
+                    DISPLAY_WARNING = True
+                    warning_time = time.time()
                     warning_count += 1
-                    last_warning_time = current_time
-                    cv2.putText(frame, f"Warning: Head rotation detection", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                else:
+                    if time.time() - warning_time >= 5:
+                        DISPLAY_WARNING = False
 
-    # 오른쪽 하단에 경고 횟수 표시
-    cv2.putText(frame, f"Warnings: {warning_count}", (frame.shape[1] - 200, frame.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        if DISPLAY_WARNING:
+            cv2.putText(frame, "Warning: Head rotation detection", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+    # cv2.putText(frame, f"Warning Count: {warning_count}", (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+    cv2.putText(frame, f"Warning Count: {warning_count}", (frame.shape[1] - 160, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
 
     cv2.imshow('Frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
