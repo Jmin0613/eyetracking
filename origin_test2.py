@@ -51,21 +51,23 @@ while True:
 
         mouth_movement = get_mouth_movement(landmarks)
 
-        # 경고 메시지를 띄우고 5초 동안 고개 회전 감지를 막습니다.
-        if DISPLAY_WARNING:
-            if time.time() - warning_time < 5:
-                cv2.putText(frame, "Warning: Head rotation detection", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            else:
-                DISPLAY_WARNING = False
-        else:
-            # 미소를 지었는지 판별하고, 미소를 지지 않았을 경우에만 경고 메시지 출력 및 카운트
-            if mouth_movement < MOUTH_THRESHOLD:
-                if ratio > 1.2 or ratio < 0.8:  # 임의의 기준값
+        # 미소를 지었는지 판별하고, 미소를 지지 않았을 경우에만 경고 메시지 출력 및 카운트
+        if mouth_movement < MOUTH_THRESHOLD:
+            if ratio > 1.2 or ratio < 0.8:  # 임의의 기준값
+                if not DISPLAY_WARNING:
                     DISPLAY_WARNING = True
                     warning_time = time.time()
                     warning_count += 1
+                else:
+                    if time.time() - warning_time >= 5:
+                        DISPLAY_WARNING = False
 
+        if DISPLAY_WARNING:
+            cv2.putText(frame, "Warning: Head rotation detection", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+    # cv2.putText(frame, f"Warning Count: {warning_count}", (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
     cv2.putText(frame, f"Warning Count: {warning_count}", (frame.shape[1] - 160, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
 
     cv2.imshow('Frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
