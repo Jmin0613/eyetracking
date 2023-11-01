@@ -44,8 +44,8 @@ while True:
         mouth_left = landmarks.part(48)
         mouth_right = landmarks.part(54)
 
-        cv2.line(frame, (nose_tip.x, nose_tip.y), (mouth_left.x, mouth_left.y), (255, 0, 0), 2)
-        cv2.line(frame, (nose_tip.x, nose_tip.y), (mouth_right.x, mouth_right.y), (255, 0, 0), 2)
+        # cv2.line(frame, (nose_tip.x, nose_tip.y), (mouth_left.x, mouth_left.y), (255, 0, 0), 2)
+        # cv2.line(frame, (nose_tip.x, nose_tip.y), (mouth_right.x, mouth_right.y), (255, 0, 0), 2)
 
         ratio = get_distance(nose_tip, mouth_left) / get_distance(nose_tip, mouth_right)
 
